@@ -1,0 +1,6 @@
+{
+  "name": "GoalSphere",
+  "description": "Premium football news website template with live scores, stats, and World Cup 2026 hub.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
