@@ -331,11 +331,12 @@ function buildPlayers(teams: WorldCupTeam[]): PlayerProfile[] {
 }
 
 export async function fetchWorldCupData(): Promise<WorldCupData> {
-  const [repoTeams, repoMatches, repoStadiums, repoTables] = await Promise.all([
+  const [repoTeams, repoMatches, repoStadiums, repoTables, apiFixtures] = await Promise.all([
     getJson<RepoTeam[]>(`${WORLDCUP_REPO_BASE}/football.teams.json`),
     getJson<RepoMatch[]>(`${WORLDCUP_REPO_BASE}/football.matches.json`),
     getJson<RepoStadium[]>(`${WORLDCUP_REPO_BASE}/football.stadiums.json`),
     getJson<RepoTable[]>(`${WORLDCUP_REPO_BASE}/football.matchtables.json`),
+    getApiFootball<ApiFootballFixture[]>(`fixtures?league=${WORLD_CUP_LEAGUE}&season=${WORLD_CUP_SEASON}`).catch(() => [] as ApiFootballFixture[]),
   ]);
   const teamById = new Map(repoTeams.map((team) => [team.id, team]));
   const stadiumById = new Map(repoStadiums.map((stadium) => [stadium.id, stadium]));
@@ -377,6 +378,26 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
       score2: manualResult?.score2 ?? (hasScores ? Number(match.away_score) : undefined),
     } satisfies WorldCupMatch;
   }).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+  // Merge real API-Football fixtures for ended/live matches
+  if (apiFixtures.length) {
+    const fixtureMap = new Map<string, ApiFootballFixture>();
+    apiFixtures.forEach((f) => {
+      fixtureMap.set(`${f.teams.home.name} vs ${f.teams.away.name}`, f);
+    });
+    matches.forEach((m) => {
+      const fixture = fixtureMap.get(`${m.team1} vs ${m.team2}`) || fixtureMap.get(`${m.team2} vs ${m.team1}`);
+      if (fixture && fixture.goals.home !== null && fixture.goals.away !== null) {
+        m.score1 = fixture.goals.home;
+        m.score2 = fixture.goals.away;
+        const statusShort = fixture.fixture.status.short;
+        if (['FT', 'PEN', 'AET'].includes(statusShort)) m.status = 'Result';
+        else if (['1H', 'HT', '2H', 'ET', 'P', 'LIVE', 'SUSP'].includes(statusShort)) m.status = 'Live';
+        else if (statusShort === 'NS') m.status = 'Upcoming';
+      }
+    });
+  }
+
   const teams = repoTeams.map((team) => {
     const teamMatches = matches.filter((match) => match.team1 === team.name_en || match.team2 === team.name_en);
     return {

@@ -1,3 +1,8 @@
+
+
+
+
+
 import {FormEvent, Key, ReactNode, useEffect, useMemo, useState} from 'react';
 import {
   fallbackArticles,
@@ -263,7 +268,6 @@ function Layout({hasLiveMatches, path, articles, children}: {hasLiveMatches: boo
       <Ticker articles={articles} />
       <Header hasLiveMatches={hasLiveMatches} onSearch={() => setSearchOpen(true)} path={path} />
       <main>{children}</main>
-      <FixedImagePopup />
       <Footer />
     </>
   );
