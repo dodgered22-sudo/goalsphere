@@ -15,6 +15,164 @@ import type {Article} from './static';
 */
 export const manualPosts: Article[] = [
   {
+    title: 'USA Start World Cup 2026 in Style with Dominant 4-1 Victory Over Paraguay',
+    slug: 'usa-start-world-cup-2026-4-1-paraguay',
+    description: 'United States beat Paraguay 4-1 in an impressive opening Group D win at Los Angeles Stadium.',
+    content: `The United States men's national team announced itself as a serious contender at the 2026 FIFA World Cup with an emphatic 4-1 victory over Paraguay in front of a passionate home crowd.
+
+In a tournament where expectations are higher than ever, the Americans delivered a statement performance, scoring four goals and showcasing the attacking football that has transformed the team under head coach Mauricio Pochettino.
+
+## Dream Start for the USA
+Playing in front of thousands of supporters at Los Angeles Stadium, the United States produced a sensational first-half display that left Paraguay struggling to cope with their intensity and movement.
+
+Folarin Balogun starred with two goals, while Gio Reyna added a spectacular late finish as the hosts secured all three points in their opening Group D match.
+
+The victory gives the United States an early advantage in the group and provides a major confidence boost ahead of upcoming matches against Turkey and Australia.
+
+## Pochettino Praises Team but Stays Grounded
+Despite the impressive scoreline, Mauricio Pochettino was quick to emphasize that the victory represents only the first step in a much longer journey.
+
+"The players and coaching staff deserve praise for what they produced today. I am extremely proud of them," Pochettino said after the match.
+
+"We understand this is only the beginning, not an achievement. Opening matches at the World Cup are always difficult, especially when you are playing at home in front of your own supporters."
+
+The Argentine manager highlighted his team's excellent first-half performance while also confirming that Christian Pulisic was substituted as a precaution after experiencing discomfort in his leg.
+
+## Historic Night for American Soccer
+The win was historic for several reasons.
+
+It marked the first time since the 1930 World Cup that the United States won a World Cup match by three goals. Coincidentally, that victory also came against Paraguay.
+
+The Americans also achieved their largest-ever victory in a World Cup match and became the first USA team to score four goals in a single World Cup game.
+
+For a nation seeking to establish itself among football's elite, the performance was another significant milestone.
+
+## Balogun Leads the Charge
+Folarin Balogun once again demonstrated why he has become one of the most important players in the American squad.
+
+The striker scored twice and constantly threatened Paraguay's defense with his pace, movement, and finishing ability.
+
+Alongside Christian Pulisic, Balogun was at the heart of almost every dangerous attack during a dominant first half in which the United States controlled possession and created chances at will.
+
+His performance earned widespread praise and strengthened his reputation as one of the rising stars of international football.
+
+## Pulisic Remains the Key Man
+While Balogun grabbed the headlines, Christian Pulisic continued to show why he remains the face of American soccer.
+
+The captain provided creativity, leadership, and an assist before being replaced at halftime due to a minor injury concern.
+
+Pochettino later reassured supporters that the substitution was precautionary and expressed optimism that Pulisic would be available for the next match.
+
+## A New Identity Under Pochettino
+Since taking charge in September 2024, Mauricio Pochettino has worked to transform the American team.
+
+The United States now plays with a more aggressive pressing system, attacks with greater confidence, and appears mentally stronger than previous generations.
+
+Against Paraguay, the tactical evolution was clear. The Americans pressed high, moved the ball quickly, and controlled the match for long periods.
+
+The team finished the first half with more than 70% possession, reflecting its dominance and confidence.
+
+## Can the USA Challenge Football's Elite?
+The question many fans are now asking is whether the United States can genuinely challenge the elite teams at the 2026 World Cup.
+
+Former players and analysts believe the current generation is the strongest in American history.
+
+Many members of the squad play in Europe's top leagues, gaining valuable experience against world-class opposition every week.
+
+The team also benefits from playing on home soil, where massive crowds could provide an important advantage throughout the tournament.
+
+While stronger tests await, the performance against Paraguay suggested that the Americans are capable of competing with top-level opponents.
+
+## Looking Ahead
+The United States now turns its attention to upcoming Group D clashes against Turkey and Australia.
+
+Victory in either match would put the Americans in an excellent position to secure qualification for the knockout stages.
+
+For now, fans can celebrate a memorable opening night that combined attacking football, historic achievements, and renewed hope.
+
+IMAGE|https://i.postimg.cc/dV1KttyP/images-(2).jpg|Balogun celebrates a goal.
+IMAGE|https://i.postimg.cc/3w05mS18/images-(1).jpg|United States players celebrate.
+`,
+    source: 'GoalSphere Match Report',
+    publishedAt: new Date().toISOString(),
+    image: 'https://i.postimg.cc/dV1KttyP/images-(2).jpg',
+    category: 'World Cup 2026',
+  },
+  {
+    title: "Lukić Scores — Bosnia & Herzegovina Lead Canada",
+    slug: 'lukic-scores-bosnia-herzegovina-lead-canada',
+    description: 'Lukić netted his first international goal to put Bosnia & Herzegovina ahead of hosts Canada.',
+    content: `Ovo Lukić scores his first goal for Bosnia and Herzegovina.
+
+And it puts them ahead of hosts Canada!
+
+IMAGE|https://i.postimg.cc/MHGccN4C/images.jpg|Lukić celebrates his first goal for Bosnia & Herzegovina.
+
+Follow live updates and full match coverage on GoalSphere.`,
+    source: 'GoalSphere Live',
+    publishedAt: new Date().toISOString(),
+    image: 'https://i.postimg.cc/MHGccN4C/images.jpg',
+    category: 'Live',
+  },
+  {
+    title: 'South Korea Open World Cup 2026 Campaign with a Dramatic Win Over Czech Republic',
+    slug: 'south-korea-open-world-cup-2026-campaign-dramatic-win-czech-republic',
+    description: 'South Korea secured a crucial 2–1 victory over the Czech Republic in their opening Group A match of the 2026 World Cup, coming from behind to claim all three points.',
+    content:
+      `South Korea’s head coach Hong Myung-bo emphasized that his team plays with a fighting spirit until the final whistle, stressing full unity and readiness to face the pressure of playing against host nations in the tournament.
+
+South Korea secured a crucial 2–1 victory over the Czech Republic in their opening Group A match of the 2026 World Cup, coming from behind to claim all three points.
+
+⚽ The Czech Republic took the lead through Ladislav Krejčí, before Hwang In-beom equalized for South Korea and Oh Hyeon-gyu completed the comeback with the winning goal.
+
+Speaking after the match, Hong Myung-bo said:
+“We gave the players two clear messages: never give up until the end, and always play as one team.”
+
+He also praised captain Son Heung-min, highlighting his leadership while noting there is still room to improve finishing in front of goal.
+
+📊 With this result, South Korea moves to the top of Group A alongside Mexico, both sitting on 3 points after the opening round.`,
+    source: 'GoalSphere Match Report',
+    publishedAt: new Date().toISOString(),
+    image: 'https://i.postimg.cc/JnFbrJQw/721757124-1675570407260130-4600329159580660774-n.jpg',
+    category: 'World Cup 2026',
+  },
+    {
+      title: 'Canada Earn Historic First-Ever FIFA World Cup Point',
+      slug: 'canada-earn-first-ever-fifa-world-cup-point',
+      description: 'Canada made history by earning their first-ever World Cup point with a 1-1 draw against Bosnia and Herzegovina in Toronto.',
+      content:
+        `Canada made history at FIFA World Cup 2026 by earning their first-ever point in the tournament after a hard-fought 1-1 draw against Bosnia and Herzegovina in Group B.
+
+  The result ends a difficult run for the Canadian national team, which had previously lost all six of its World Cup matches before this tournament.
+
+  Bosnia and Herzegovina struck first in the 21st minute through J. Lukić, putting Canada under early pressure in front of their home supporters at Toronto Stadium.
+
+  Despite trailing for most of the match, Canada continued to push forward in search of an equalizer.
+
+  Their breakthrough finally arrived in the 78th minute when substitute Cyle Larin found the back of the net, sending the home crowd into celebration and rescuing a valuable point for the hosts.
+
+  IMAGE|https://i.postimg.cc/m24vf9Jz/HKp-IWHUW0AAT1yn.jpg|Cyle Larin celebrates after his equaliser for Canada.
+
+  IMAGE|https://i.postimg.cc/K8vC42Zx/HKp-Ft0Gbk-AA8d-AW.jpg|Toronto Stadium on the night Canada earned their first World Cup point.
+
+  ## A Historic Moment for Canada
+  The draw marks a significant milestone for Canadian football. After years of waiting for success on the world's biggest stage, Canada finally earned its first point in FIFA World Cup history.
+
+  ## Match Summary
+  FIFA World Cup 2026 – Group B
+
+  Canada 1-1 Bosnia and Herzegovina
+
+  J. Lukić 21' — Cyle Larin 78'
+
+  📍 Toronto Stadium
+  `,
+      source: 'GoalSphere Match Report',
+      publishedAt: new Date().toISOString(),
+      image: 'https://i.postimg.cc/m24vf9Jz/HKp-IWHUW0AAT1yn.jpg',
+      category: 'World Cup 2026',
+    },
+  {
     title: 'Canada vs Bosnia & Herzegovina: Group B World Cup Clash Set for Toronto',
     slug: 'canada-vs-bosnia-herzegovina-group-b-world-cup-2026-toronto',
     description: 'Canada and Bosnia & Herzegovina begin their FIFA World Cup 2026 campaign in Toronto. Check match details, kickoff time, venue, and predictions ahead of this Group B showdown.',

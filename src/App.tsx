@@ -425,7 +425,9 @@ function getArticlePath(article: Article) {
 function ScoresSection({compact = false, data, liveState, loading, error}: {compact?: boolean; data: WorldCupData; liveState?: LiveMatchesState; loading: boolean; error: string | null}) {
   const [selectedMatch, setSelectedMatch] = useState<WorldCupMatch | null>(null);
   const live = data.matches.filter((match) => match.status === 'Live');
-  const upcoming = data.matches.filter((match) => match.status === 'Upcoming');
+  const upcoming = data.matches
+    .filter((match) => match.status === 'Upcoming')
+    .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
   const showLiveFixture = compact && liveState;
 
   return (
@@ -494,8 +496,12 @@ function LivePage({liveState, streamState}: {liveState: LiveMatchesState; stream
 function WorldCupMatchdaySection({data, error, liveState, loading, streamState}: {data: WorldCupData; error: string | null; liveState: LiveMatchesState; loading: boolean; streamState: LiveStreamState}) {
   const [selectedMatch, setSelectedMatch] = useState<WorldCupMatch | null>(null);
   const live = data.matches.filter((match) => match.status === 'Live');
-  const results = data.matches.filter((match) => match.status === 'Result');
-  const upcoming = data.matches.filter((match) => match.status === 'Upcoming');
+  const results = data.matches
+    .filter((match) => match.status === 'Result')
+    .sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime());
+  const upcoming = data.matches
+    .filter((match) => match.status === 'Upcoming')
+    .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
 
   return (
     <>
@@ -696,7 +702,9 @@ function WorldCupMatchCard({match, onSelect}: {match: WorldCupMatch; onSelect: (
     <button className={`match-card glass ${match.status === 'Live' ? 'is-live' : ''}`} onClick={() => onSelect(match)} type="button">
       <div className="match-hdr">
         <span className="comp-nm"><i className="fa-solid fa-trophy" /> {match.group} | {match.round}</span>
-        <span className={`ms ${match.status === 'Live' ? 'live' : match.status === 'Result' ? 'ft' : 'sched'}`}>{match.status}</span>
+        <span className={`ms ${match.status === 'Live' ? 'live' : match.status === 'Result' ? 'ft' : 'sched'}`}>
+          {match.status === 'Live' ? 'LIVE' : match.status === 'Result' ? 'FT' : 'Upcoming'}
+        </span>
       </div>
       <div className="teams-row">
         <TeamMini name={match.team1} logo={match.team1Flag} />
@@ -1794,7 +1802,7 @@ function GroupStandingsGrid({groups}: {groups: GroupStanding[]}) {
   );
 }
 
-function GroupStandingCard({group}: {group: GroupStanding}) {
+function GroupStandingCard({group}: {group: GroupStanding; key?: Key}) {
   return (
     <article className="glass group-standing-card">
       <div className="group-standing-head">
@@ -2171,6 +2179,11 @@ function ArticleBodyBlock({articleSlug, index, text}: {articleSlug: string; inde
 function ArticlePage({backLabel = 'Back to News', basePath = '/news', slug, articles}: {backLabel?: string; basePath?: string; slug: string; articles: Article[]}) {
   const article = articles.find((item) => item.slug === slug) || fallbackArticles.find((item) => item.slug === slug) || articles[0];
   if (!article) return <NotFound />;
+
+  const relatedArticles = articles
+    .filter((item) => item.category === article.category && item.slug !== article.slug)
+    .slice(0, 3);
+
   return (
     <article className="container article-page">
       <Link to={basePath} className="back-link"><i className="fa-solid fa-arrow-left" /> {backLabel}</Link>
@@ -3297,6 +3310,28 @@ export default function App() {
     setMeta('twitter:description', description);
     setMeta('twitter:image', image);
     setCanonical(canonicalUrl);
+    // Add JSON-LD Article schema when on an article/news page to improve indexing
+    let ld = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement | null;
+    if (!ld) {
+      ld = document.createElement('script');
+      ld.type = 'application/ld+json';
+      document.head.appendChild(ld);
+    }
+    if (article) {
+      const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'NewsArticle',
+        headline: article.title,
+        image: [image],
+        datePublished: article.publishedAt,
+        author: { '@type': 'Organization', name: article.source || 'GoalSphere' },
+        mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl },
+        description: article.description,
+      };
+      ld.textContent = JSON.stringify(jsonLd);
+    } else {
+      ld.textContent = '';
+    }
     trackPageView(path, `GoalSphere | ${pageName}`);
   }, [articles, path]);
 

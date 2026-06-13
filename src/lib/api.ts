@@ -346,8 +346,18 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
     const [datePart, timePart = '00:00'] = match.local_date.split(' ');
     const [month, day, year] = datePart.split('/');
     const manualResult = manualWorldCupResults[match.id];
-    const isLive = match.time_elapsed !== 'notstarted' && match.finished !== 'TRUE';
-    const isResult = Boolean(manualResult) || match.finished === 'TRUE';
+
+    // compute start and end timestamps from local_date/time
+    const startIso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
+    const startsAt = new Date(startIso).getTime();
+    const endsAt = startsAt + 2 * 60 * 60 * 1000; // assume 2 hour match window
+    const now = Date.now();
+
+    // decide live/result/upcoming using timestamps and available score/finished flags
+    const hasScores = match.home_score !== '' && match.away_score !== '' && match.home_score != null && match.away_score != null;
+    const isResult = Boolean(manualResult) || match.finished === 'TRUE' || (hasScores && now > endsAt);
+    const isLive = !isResult && now >= startsAt && now <= endsAt;
+
     return {
       id: match.id,
       number: Number(match.id),
@@ -363,8 +373,8 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
       city: stadium?.city_en || 'Host city TBD',
       country: stadium?.country_en || 'Host country TBD',
       status: isResult ? 'Result' : isLive ? 'Live' : 'Upcoming',
-      score1: manualResult?.score1 ?? Number(match.home_score),
-      score2: manualResult?.score2 ?? Number(match.away_score),
+      score1: manualResult?.score1 ?? (hasScores ? Number(match.home_score) : undefined),
+      score2: manualResult?.score2 ?? (hasScores ? Number(match.away_score) : undefined),
     } satisfies WorldCupMatch;
   }).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
   const teams = repoTeams.map((team) => {
@@ -387,19 +397,53 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
     capacity: stadium.capacity,
     matches: matches.filter((match) => match.ground === stadium.fifa_name || match.city === stadium.city_en).length,
   })).sort((a, b) => b.matches - a.matches);
-  const standings = repoTables.flatMap((table) => table.teams.map((row, index) => {
-    const team = teamById.get(row.team_id);
-    return {
-      rank: index + 1,
-      team: `${team?.name_en || row.team_id} (Group ${table.group})`,
-      logo: team?.flag,
-      played: Number(row.mp),
-      won: Number(row.w),
-      drawn: Number(row.d),
-      lost: Number(row.l),
-      points: Number(row.pts),
-    };
-  }));
+  // Apply manual override for South Korea vs Czech Republic if present
+  matches.forEach((m) => {
+    if (m.team1 === 'South Korea' && m.team2 === 'Czech Republic') {
+      m.score1 = 2;
+      m.score2 = 1;
+      m.status = 'Result';
+    }
+    // force Canada 1-1 Bosnia result (handle name variants and either home/away ordering)
+    if ((m.team1 === 'Canada' && (m.team2 === 'Bosnia & Herzegovina' || m.team2 === 'Bosnia and Herzegovina')) || (m.team2 === 'Canada' && (m.team1 === 'Bosnia & Herzegovina' || m.team1 === 'Bosnia and Herzegovina'))) {
+      if (m.team1 === 'Canada') {
+        m.score1 = 1;
+        m.score2 = 1;
+      } else {
+        m.score2 = 1;
+        m.score1 = 1;
+      }
+      m.status = 'Result';
+    }
+  });
+
+  // Build standings from match results so manual/result updates are reflected immediately
+  const statsByTeam = new Map<string, {team: string; logo?: string; group: string; played: number; won: number; drawn: number; lost: number; points: number}>();
+  // initialize teams
+  repoTeams.forEach((team) => {
+    statsByTeam.set(team.name_en, {team: team.name_en, logo: team.flag, group: `Group ${team.groups}`, played: 0, won: 0, drawn: 0, lost: 0, points: 0});
+  });
+  // accumulate from matches with results
+  matches.forEach((m) => {
+    if (m.status === 'Result' && typeof m.score1 === 'number' && typeof m.score2 === 'number') {
+      const a = statsByTeam.get(m.team1);
+      const b = statsByTeam.get(m.team2);
+      if (!a || !b) return;
+      a.played += 1;
+      b.played += 1;
+      if (m.score1 > m.score2) {
+        a.won += 1; b.lost += 1; a.points += 3;
+      } else if (m.score2 > m.score1) {
+        b.won += 1; a.lost += 1; b.points += 3;
+      } else {
+        a.drawn += 1; b.drawn += 1; a.points += 1; b.points += 1;
+      }
+    }
+  });
+
+  const standings = Array.from(statsByTeam.values())
+    .map((s) => ({rank: 0, team: `${s.team} (${s.group})`, logo: s.logo, played: s.played, won: s.won, drawn: s.drawn, lost: s.lost, points: s.points}))
+    .sort((x, y) => y.points - x.points || y.won - x.won || x.team.localeCompare(y.team));
 
   return {
     name: 'FIFA World Cup 2026',
