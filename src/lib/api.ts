@@ -13,10 +13,99 @@ const WORLD_CUP_LEAGUE = '1';
 const WORLD_CUP_SEASON = '2026';
 const WORLDCUP_REPO_BASE = 'https://raw.githubusercontent.com/rezarahiminia/worldcup2026/main';
 const manualWorldCupResults: Record<string, {score1: number; score2: number}> = {
-  // The upstream 2026 dataset can lag behind live match reports.
-  // Match 1: Mexico 2-0 South Africa, FIFA World Cup 2026 opening match.
+  // Fallback when live providers lag behind kickoff.
   '1': {score1: 2, score2: 0},
 };
+
+type WorldCupFixtureSnapshot = {
+  id: string;
+  home: string;
+  away: string;
+  score1: number | null;
+  score2: number | null;
+  status: 'Live' | 'Upcoming' | 'Result';
+  startTime: string;
+  venue?: string;
+};
+
+const TEAM_NAME_ALIASES: Record<string, string> = {
+  'bosnia and herzegovina': 'bosnia herzegovina',
+  'bosnia herzegovina': 'bosnia herzegovina',
+  'czech republic': 'czechia',
+  'cote d ivoire': 'ivory coast',
+  'curacao': 'curacao',
+  'korea republic': 'south korea',
+  'republic of korea': 'south korea',
+  'turkey': 'turkiye',
+  'turkiye': 'turkiye',
+  'united states': 'usa',
+  'us': 'usa',
+};
+
+function normalizeTeamName(name: string) {
+  const normalized = name
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  return TEAM_NAME_ALIASES[normalized] || normalized;
+}
+
+function teamPairKey(team1: string, team2: string) {
+  const names = [normalizeTeamName(team1), normalizeTeamName(team2)].sort();
+  return names.join('|');
+}
+
+function matchKickoffTimestamp(match: Pick<WorldCupMatch, 'date' | 'time'>) {
+  return new Date(`${match.date}T${match.time}:00`).getTime();
+}
+
+function hasRepoScores(match: RepoMatch) {
+  const hasValues = match.home_score !== '' && match.away_score !== '' && match.home_score != null && match.away_score != null;
+  if (!hasValues) return false;
+  if (match.finished === 'TRUE') return true;
+  return !(match.home_score === '0' && match.away_score === '0');
+}
+
+function applyFixtureScores(match: WorldCupMatch, fixture: Pick<WorldCupFixtureSnapshot, 'home' | 'away' | 'score1' | 'score2'>) {
+  if (typeof fixture.score1 !== 'number' || typeof fixture.score2 !== 'number') return;
+
+  if (normalizeTeamName(match.team1) === normalizeTeamName(fixture.home)) {
+    match.score1 = fixture.score1;
+    match.score2 = fixture.score2;
+    return;
+  }
+
+  if (normalizeTeamName(match.team1) === normalizeTeamName(fixture.away)) {
+    match.score1 = fixture.score2;
+    match.score2 = fixture.score1;
+    return;
+  }
+
+  if (normalizeTeamName(match.team2) === normalizeTeamName(fixture.home)) {
+    match.score1 = fixture.score2;
+    match.score2 = fixture.score1;
+  }
+}
+
+function buildFixtureLookup(fixtures: WorldCupFixtureSnapshot[]) {
+  const lookup = new Map<string, WorldCupFixtureSnapshot>();
+  fixtures.forEach((fixture) => {
+    lookup.set(teamPairKey(fixture.home, fixture.away), fixture);
+  });
+  return lookup;
+}
+
+async function fetchWorldCupFixtureSnapshots(): Promise<WorldCupFixtureSnapshot[]> {
+  try {
+    const data = await getJson<{fixtures?: WorldCupFixtureSnapshot[]}>('/api/world-cup-fixtures');
+    return data.fixtures || [];
+  } catch {
+    return [];
+  }
+}
 
 type ApiFootballFixture = {
   fixture: {
@@ -331,15 +420,18 @@ function buildPlayers(teams: WorldCupTeam[]): PlayerProfile[] {
 }
 
 export async function fetchWorldCupData(): Promise<WorldCupData> {
-  const [repoTeams, repoMatches, repoStadiums, repoTables, apiFixtures] = await Promise.all([
+  const [repoTeams, repoMatches, repoStadiums, repoTables, apiFixtures, liveFixtures] = await Promise.all([
     getJson<RepoTeam[]>(`${WORLDCUP_REPO_BASE}/football.teams.json`),
     getJson<RepoMatch[]>(`${WORLDCUP_REPO_BASE}/football.matches.json`),
     getJson<RepoStadium[]>(`${WORLDCUP_REPO_BASE}/football.stadiums.json`),
     getJson<RepoTable[]>(`${WORLDCUP_REPO_BASE}/football.matchtables.json`),
     getApiFootball<ApiFootballFixture[]>(`fixtures?league=${WORLD_CUP_LEAGUE}&season=${WORLD_CUP_SEASON}`).catch(() => [] as ApiFootballFixture[]),
+    fetchWorldCupFixtureSnapshots(),
   ]);
   const teamById = new Map(repoTeams.map((team) => [team.id, team]));
   const stadiumById = new Map(repoStadiums.map((stadium) => [stadium.id, stadium]));
+  const liveFixtureLookup = buildFixtureLookup(liveFixtures);
+  const now = Date.now();
   const matches = repoMatches.map((match) => {
     const home = teamById.get(match.home_team_id);
     const away = teamById.get(match.away_team_id);
@@ -347,26 +439,29 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
     const [datePart, timePart = '00:00'] = match.local_date.split(' ');
     const [month, day, year] = datePart.split('/');
     const manualResult = manualWorldCupResults[match.id];
+    const team1 = home?.name_en || `Team ${match.home_team_id}`;
+    const team2 = away?.name_en || `Team ${match.away_team_id}`;
 
-    // compute start and end timestamps from local_date/time
     const startIso = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}:00`;
     const startsAt = new Date(startIso).getTime();
-    const endsAt = startsAt + 2 * 60 * 60 * 1000; // assume 2 hour match window
-    const now = Date.now();
+    const endsAt = startsAt + 2 * 60 * 60 * 1000;
 
-    // decide live/result/upcoming using timestamps and available score/finished flags
-    const hasScores = match.home_score !== '' && match.away_score !== '' && match.home_score != null && match.away_score != null;
-    const isResult = Boolean(manualResult) || match.finished === 'TRUE' || (hasScores && now > endsAt);
-    const isLive = !isResult && now >= startsAt && now <= endsAt;
+    const liveFixture = liveFixtureLookup.get(teamPairKey(team1, team2));
+    const repoScores = hasRepoScores(match);
+    const isResult = Boolean(manualResult)
+      || match.finished === 'TRUE'
+      || liveFixture?.status === 'Result'
+      || (repoScores && now > endsAt);
+    const isLive = liveFixture?.status === 'Live' || (!isResult && now >= startsAt && now <= endsAt);
 
-    return {
+    const entry = {
       id: match.id,
       number: Number(match.id),
       round: match.type === 'group' ? `Matchday ${match.matchday}` : match.type.toUpperCase(),
       date: `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`,
       time: timePart,
-      team1: home?.name_en || `Team ${match.home_team_id}`,
-      team2: away?.name_en || `Team ${match.away_team_id}`,
+      team1,
+      team2,
       team1Flag: home?.flag,
       team2Flag: away?.flag,
       group: match.group.length === 1 ? `Group ${match.group}` : match.group,
@@ -374,29 +469,66 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
       city: stadium?.city_en || 'Host city TBD',
       country: stadium?.country_en || 'Host country TBD',
       status: isResult ? 'Result' : isLive ? 'Live' : 'Upcoming',
-      score1: manualResult?.score1 ?? (hasScores ? Number(match.home_score) : undefined),
-      score2: manualResult?.score2 ?? (hasScores ? Number(match.away_score) : undefined),
+      score1: manualResult?.score1 ?? (repoScores ? Number(match.home_score) : undefined),
+      score2: manualResult?.score2 ?? (repoScores ? Number(match.away_score) : undefined),
     } satisfies WorldCupMatch;
+
+    if (liveFixture) {
+      applyFixtureScores(entry, liveFixture);
+    }
+
+    return entry;
   }).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
-  // Merge real API-Football fixtures for ended/live matches
+  // Merge API-Football fixtures for ended/live matches when ESPN is unavailable.
   if (apiFixtures.length) {
     const fixtureMap = new Map<string, ApiFootballFixture>();
-    apiFixtures.forEach((f) => {
-      fixtureMap.set(`${f.teams.home.name} vs ${f.teams.away.name}`, f);
+    apiFixtures.forEach((fixture) => {
+      fixtureMap.set(teamPairKey(fixture.teams.home.name, fixture.teams.away.name), fixture);
     });
-    matches.forEach((m) => {
-      const fixture = fixtureMap.get(`${m.team1} vs ${m.team2}`) || fixtureMap.get(`${m.team2} vs ${m.team1}`);
-      if (fixture && fixture.goals.home !== null && fixture.goals.away !== null) {
-        m.score1 = fixture.goals.home;
-        m.score2 = fixture.goals.away;
-        const statusShort = fixture.fixture.status.short;
-        if (['FT', 'PEN', 'AET'].includes(statusShort)) m.status = 'Result';
-        else if (['1H', 'HT', '2H', 'ET', 'P', 'LIVE', 'SUSP'].includes(statusShort)) m.status = 'Live';
-        else if (statusShort === 'NS') m.status = 'Upcoming';
+    matches.forEach((match) => {
+      const fixture = fixtureMap.get(teamPairKey(match.team1, match.team2));
+      if (!fixture || fixture.goals.home === null || fixture.goals.away === null) return;
+
+      const startsAt = matchKickoffTimestamp(match);
+      const endsAt = startsAt + 2 * 60 * 60 * 1000;
+      applyFixtureScores(match, {
+        home: fixture.teams.home.name,
+        away: fixture.teams.away.name,
+        score1: fixture.goals.home,
+        score2: fixture.goals.away,
+      });
+      const statusShort = fixture.fixture.status.short;
+      if (['FT', 'PEN', 'AET'].includes(statusShort)) {
+        match.status = 'Result';
+      } else if (['1H', 'HT', '2H', 'ET', 'P', 'LIVE', 'SUSP'].includes(statusShort)) {
+        match.status = 'Live';
+      } else if (statusShort === 'NS' && now < startsAt) {
+        match.status = 'Upcoming';
+      } else if (statusShort === 'NS' && now > endsAt) {
+        match.status = 'Result';
       }
     });
   }
+
+  // Final pass: apply live provider snapshots and keep finished matches out of upcoming.
+  matches.forEach((match) => {
+    const liveFixture = liveFixtureLookup.get(teamPairKey(match.team1, match.team2));
+    if (liveFixture) {
+      if (liveFixture.status === 'Result' || liveFixture.status === 'Live') {
+        match.status = liveFixture.status;
+      }
+      applyFixtureScores(match, liveFixture);
+    }
+
+    const startsAt = matchKickoffTimestamp(match);
+    const endsAt = startsAt + 2 * 60 * 60 * 1000;
+    const hasFinalScore = typeof match.score1 === 'number' && typeof match.score2 === 'number';
+
+    if (match.status === 'Upcoming' && now > endsAt && hasFinalScore) {
+      match.status = 'Result';
+    }
+  });
 
   const teams = repoTeams.map((team) => {
     const teamMatches = matches.filter((match) => match.team1 === team.name_en || match.team2 === team.name_en);
@@ -420,6 +552,9 @@ export async function fetchWorldCupData(): Promise<WorldCupData> {
   })).sort((a, b) => b.matches - a.matches);
   // Apply manual override for South Korea vs Czech Republic if present
   matches.forEach((m) => {
+    const liveFixture = liveFixtureLookup.get(teamPairKey(m.team1, m.team2));
+    if (liveFixture) return;
+
     if (m.team1 === 'South Korea' && m.team2 === 'Czech Republic') {
       m.score1 = 2;
       m.score2 = 1;

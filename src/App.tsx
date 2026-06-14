@@ -428,9 +428,14 @@ function getArticlePath(article: Article) {
 
 function ScoresSection({compact = false, data, liveState, loading, error}: {compact?: boolean; data: WorldCupData; liveState?: LiveMatchesState; loading: boolean; error: string | null}) {
   const [selectedMatch, setSelectedMatch] = useState<WorldCupMatch | null>(null);
+  const now = Date.now();
   const live = data.matches.filter((match) => match.status === 'Live');
   const upcoming = data.matches
-    .filter((match) => match.status === 'Upcoming')
+    .filter((match) => {
+      if (match.status !== 'Upcoming') return false;
+      const kickoff = new Date(`${match.date}T${match.time}:00`).getTime();
+      return kickoff > now - 15 * 60 * 1000;
+    })
     .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
   const showLiveFixture = compact && liveState;
 
@@ -504,7 +509,11 @@ function WorldCupMatchdaySection({data, error, liveState, loading, streamState}:
     .filter((match) => match.status === 'Result')
     .sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime());
   const upcoming = data.matches
-    .filter((match) => match.status === 'Upcoming')
+    .filter((match) => {
+      if (match.status !== 'Upcoming') return false;
+      const kickoff = new Date(`${match.date}T${match.time}:00`).getTime();
+      return kickoff > Date.now() - 15 * 60 * 1000;
+    })
     .sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
 
   return (

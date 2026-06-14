@@ -195,6 +195,71 @@ app.get('/api/world-cup', async (_request, response) => {
   }
 });
 
+app.get('/api/world-cup-fixtures', async (_request, response) => {
+  try {
+    const tournamentStart = new Date('2026-06-11T00:00:00Z');
+    const end = new Date();
+    end.setUTCDate(end.getUTCDate() + 8);
+    const dates: string[] = [];
+    for (let cursor = new Date(tournamentStart); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+      const year = cursor.getUTCFullYear();
+      const month = String(cursor.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(cursor.getUTCDate()).padStart(2, '0');
+      dates.push(`${year}${month}${day}`);
+    }
+
+    const scoreboards = await Promise.allSettled(
+      dates.map((date) => fetchJsonWithTimeout<{events?: any[]}>(`${espnSite}/fifa.world/scoreboard?dates=${date}`, 8000)),
+    );
+
+    const byId = new Map<string, {
+      id: string;
+      home: string;
+      away: string;
+      score1: number | null;
+      score2: number | null;
+      status: 'Live' | 'Upcoming' | 'Result';
+      startTime: string;
+      venue?: string;
+    }>();
+
+    scoreboards.forEach((result) => {
+      if (result.status !== 'fulfilled') return;
+      (result.value.events || []).forEach((event) => {
+        const competition = event.competitions?.[0];
+        const home = competition?.competitors?.find((team: any) => team.homeAway === 'home') || competition?.competitors?.[0];
+        const away = competition?.competitors?.find((team: any) => team.homeAway === 'away') || competition?.competitors?.[1];
+        const state = event.status?.type?.state;
+        const status = state === 'in' ? 'Live' : state === 'post' ? 'Result' : 'Upcoming';
+        const parseScore = (value?: string) => {
+          if (value == null || value === '' || value === '-') return null;
+          const parsed = Number(value);
+          return Number.isFinite(parsed) ? parsed : null;
+        };
+        const score1 = parseScore(home?.score);
+        const score2 = parseScore(away?.score);
+        byId.set(event.id, {
+          id: event.id,
+          home: home?.team?.displayName || 'Home',
+          away: away?.team?.displayName || 'Away',
+          score1: status === 'Upcoming' ? null : score1,
+          score2: status === 'Upcoming' ? null : score2,
+          status,
+          startTime: event.date || new Date().toISOString(),
+          venue: competition?.venue?.fullName,
+        });
+      });
+    });
+
+    response.json({
+      updatedAt: new Date().toISOString(),
+      fixtures: Array.from(byId.values()).sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    });
+  } catch (error) {
+    response.status(502).json({error: error instanceof Error ? error.message : 'Unable to load World Cup fixtures'});
+  }
+});
+
 if (isProduction) {
   app.use(express.static(path.join(__dirname, 'dist')));
   app.get('*', (_request, response) => {

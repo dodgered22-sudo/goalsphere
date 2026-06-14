@@ -15,6 +15,17 @@ import type {Article} from './static';
 */
 export const manualPosts: Article[] = [
   {
+    title: 'Qatar Earn Historic First World Cup Point with Dramatic Late Equaliser Against Switzerland',
+    slug: 'qatar-earn-historic-first-world-cup-point-switzerland',
+    description: 'Qatar secured their first-ever World Cup point after a dramatic 1-1 draw against Switzerland thanks to a last-gasp Boualem Khoukhi header.',
+    content:
+      'Qatar secured the first World Cup point in their history after a dramatic 1-1 draw against Switzerland in their opening Group B match of the FIFA World Cup 2026.\n\nThe Gulf nation looked destined for another World Cup defeat after Switzerland took an early lead through striker Breel Embolo, but a stoppage-time header from veteran defender Boualem Khoukhi sparked unforgettable celebrations for Qatar and their supporters.\n\n## Switzerland Take Control\n\nSwitzerland dominated much of the contest at the San Francisco Bay Area Stadium and deservedly moved ahead in the 17th minute.\n\nBreel Embolo calmly converted a penalty after Qatar goalkeeper Mahmoud Abunada brought down Remo Freuler inside the area. Replays suggested Freuler may have been marginally offside during the build-up, but after review the goal stood.\n\nThe Swiss continued to control possession and created several opportunities to extend their advantage. Nottingham Forest winger Dan Ndoye missed multiple chances, while Embolo and Ruben Vargas were also unable to convert promising opportunities.\n\n## Qatar\'s Never-Give-Up Spirit\n\nDespite spending long periods defending, Qatar refused to surrender.\n\nAs the match entered stoppage time, Switzerland appeared on course for all three points. However, in the 94th minute, Homam El Amin delivered a dangerous cross into the penalty area and Boualem Khoukhi rose highest to power a header into the net.\n\nThe goal sent Qatar\'s players, coaching staff, and fans into wild celebrations as the final whistle followed shortly afterward.\n\n## A Historic Moment\n\nAfter losing all three matches during their home World Cup campaign in 2022, Qatar have now claimed their first-ever point at football\'s biggest tournament.\n\nThe result keeps Group B wide open after Matchday 1 and could prove crucial in the battle for qualification to the knockout stages.\n\n## Match Summary\n\nFIFA World Cup 2026 - Group B\nQatar 1-1 Switzerland\n\nGoals:\nSwitzerland: Breel Embolo (17\' pen)\nQatar: Boualem Khoukhi (90+4\')\n\nVenue: San Francisco Bay Area Stadium, Santa Clara, United States\nAttendance: 67,966\n\n## What\'s Next?\n\nQatar will face co-hosts Canada in Vancouver on June 18, looking to build on this historic result.\n\nSwitzerland will take on Bosnia and Herzegovina on the same day, aiming to secure their first victory of the tournament.\n\n## Group B Standings Outlook\n\nWith Qatar earning a dramatic point and Switzerland left frustrated after missing several chances, Group B remains completely open as the race for the Round of 16 continues.',
+    source: 'GoalSphere Desk',
+    publishedAt: new Date().toISOString(),
+    image: 'https://iili.io/CndE02j.jpg',
+    category: 'World Cup',
+  },
+  {
     title: 'USA Start World Cup 2026 in Style with Dominant 4-1 Victory Over Paraguay',
     slug: 'usa-start-world-cup-2026-4-1-paraguay',
     description: 'United States beat Paraguay 4-1 in an impressive opening Group D win at Los Angeles Stadium.',
@@ -524,4 +535,5 @@ He also praised captain Son Heung-min, highlighting his leadership while noting 
     image: '/post-images/world-cup-shirts.png',
     category: 'Kits',
   },
+
 ];
